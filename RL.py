@@ -15,19 +15,19 @@ GAMMA = 0.99
 INITIAL_EPSILON = 1.0
 FINAL_EPSILON = 0.05
 #how many frames to anneal epsilon
-EXPLORE = 1000 
-OBSERVE = 100
+EXPLORE = 10000 
+OBSERVE = 1000
 #store our experiences, the size of it
 REPLAY_MEMORY = 200000
 #batch size to train on
-BATCH = 25
+BATCH = 48
 
 #create tensorflow graph
 def createGraph():
      with tf.device('/gpu:0'):
         #first convolutional layer. bias vector
         #creates an empty tensor with all elements set to zero with a shape
-        W_conv1 = tf.Variable(tf.truncated_normal([8, 8, 4, 32], stddev=0.02))
+        W_conv1 = tf.Variable(tf.truncated_normal([6, 6, 4, 32], stddev=0.02))
         b_conv1 = tf.Variable(tf.constant(0.01, shape=[32]))
 
         W_conv2 = tf.Variable(tf.truncated_normal([4, 4, 32, 64], stddev=0.02))
@@ -36,24 +36,26 @@ def createGraph():
         W_conv3 = tf.Variable(tf.truncated_normal([3, 3, 64, 64], stddev=0.02))
         b_conv3 = tf.Variable(tf.constant(0.01, shape=[64]))
 
-        W_fc4 = tf.Variable(tf.truncated_normal([3136, 784], stddev=0.02))
-        b_fc4 = tf.Variable(tf.constant(0.01, shape=[784]))
+        W_fc4 = tf.Variable(tf.truncated_normal([1024, 512], stddev=0.02))
+        b_fc4 = tf.Variable(tf.constant(0.01, shape=[512]))
 
-        W_fc5 = tf.Variable(tf.truncated_normal([784, ACTIONS], stddev=0.02))
+        W_fc5 = tf.Variable(tf.truncated_normal([512, ACTIONS], stddev=0.02))
         b_fc5 = tf.Variable(tf.constant(0.01, shape=[ACTIONS]))
 
         #input for pixel data
-        s = tf.placeholder("float", [None, 84, 84, 4])
+        s = tf.placeholder("float", [None, 60, 60, 4])
 
 
         #Computes rectified linear unit activation fucntion on  a 2-D convolution given 4-D input and filter tensors. and 
-        conv1 = tf.nn.relu(tf.nn.conv2d(s, W_conv1, strides = [1, 4, 4, 1], padding = "VALID") + b_conv1)
+        conv1 = tf.nn.relu(tf.nn.conv2d(s, W_conv1, strides = [1, 4, 4, 1], padding = "SAME") + b_conv1)
 
-        conv2 = tf.nn.relu(tf.nn.conv2d(conv1, W_conv2, strides = [1, 2, 2, 1], padding = "VALID") + b_conv2)
+        pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-        conv3 = tf.nn.relu(tf.nn.conv2d(conv2, W_conv3, strides = [1, 1, 1, 1], padding = "VALID") + b_conv3)
+        conv2 = tf.nn.relu(tf.nn.conv2d(pool1, W_conv2, strides = [1, 2, 2, 1], padding = "SAME") + b_conv2)
 
-        conv3_flat = tf.reshape(conv3, [-1, 3136])
+        conv3 = tf.nn.relu(tf.nn.conv2d(conv2, W_conv3, strides = [1, 1, 1, 1], padding = "SAME") + b_conv3)
+
+        conv3_flat = tf.reshape(conv3, [-1, 1024])
 
         fc4 = tf.nn.relu(tf.matmul(conv3_flat, W_fc4) + b_fc4)
         
@@ -87,7 +89,7 @@ def trainGraph(inp, out):
     #intial frame
     frame = game.getPresentFrame()
     #convert rgb to gray scale for processing
-    frame = cv2.cvtColor(cv2.resize(frame, (84, 84)), cv2.COLOR_BGR2GRAY)
+    frame = cv2.cvtColor(cv2.resize(frame, (60, 60)), cv2.COLOR_BGR2GRAY)
     #binary colors, black or white
     ret, frame = cv2.threshold(frame, 1, 255, cv2.THRESH_BINARY)
     #stack frames, that is our input tensor
@@ -133,9 +135,9 @@ def trainGraph(inp, out):
         #reward tensor if score is positive
         reward_t, frame = game.getNextFrame(argmax_t)
         #get frame pixel data
-        frame = cv2.cvtColor(cv2.resize(frame, (84, 84)), cv2.COLOR_BGR2GRAY)
+        frame = cv2.cvtColor(cv2.resize(frame, (60, 60)), cv2.COLOR_BGR2GRAY)
         ret, frame = cv2.threshold(frame, 1, 255, cv2.THRESH_BINARY)
-        frame = np.reshape(frame, (84, 84, 1))
+        frame = np.reshape(frame, (60, 60, 1))
         #new input tensor
         inp_t1 = np.append(frame, inp_t[:, :, 0:3], axis = 2)
         
