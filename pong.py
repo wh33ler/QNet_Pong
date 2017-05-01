@@ -10,9 +10,6 @@ import random #help us define which direction the ball will start moving in
 #experience replay. learns from past policies
 
 
-#frame rate per second
-FPS = 60
-
 #size of our window
 WINDOW_WIDTH = 400
 WINDOW_HEIGHT = 400
@@ -28,9 +25,9 @@ BALL_WIDTH = 10
 BALL_HEIGHT = 10
 
 #speeds of our paddle and ball
-PADDLE_SPEED = 2
-BALL_X_SPEED = 3
-BALL_Y_SPEED = 2
+PADDLE_SPEED = 4
+BALL_X_SPEED = 6
+BALL_Y_SPEED = 4
 
 #RGB colors for our paddle and ball
 WHITE = (255, 255, 255)
@@ -63,6 +60,11 @@ def drawPaddle2(paddle2YPos):
     #draw it
     pygame.draw.rect(screen, WHITE, paddle2)
 
+def drawScore(score):    
+    font = pygame.font.Font(None, 28)    
+    scorelabel = font.render("Score " + str(score), 1, WHITE)
+    screen.blit(scorelabel, (10 , 10))
+
 
 #update the ball, using the paddle posistions the balls positions and the balls directions
 def updateBall(paddle1YPos, paddle2YPos, ballXPos, ballYPos, ballXDirection, ballYDirection):
@@ -73,10 +75,11 @@ def updateBall(paddle1YPos, paddle2YPos, ballXPos, ballYPos, ballXDirection, bal
     score = 0
 
     #checks for a collision, if the ball hits the left side, our learning agent
-    if (
-                        ballXPos <= PADDLE_BUFFER + PADDLE_WIDTH and ballYPos + BALL_HEIGHT >= paddle1YPos and ballYPos - BALL_HEIGHT <= paddle1YPos + PADDLE_HEIGHT):
+    if (ballXPos <= PADDLE_BUFFER + PADDLE_WIDTH and ballYPos + BALL_HEIGHT >= paddle1YPos and ballYPos - BALL_HEIGHT <= paddle1YPos + PADDLE_HEIGHT):
         #switches directions
         ballXDirection = 1
+        # score for not letting the ball through
+        score = 1
     #past it
     elif (ballXPos <= 0):
         #negative score
@@ -85,8 +88,7 @@ def updateBall(paddle1YPos, paddle2YPos, ballXPos, ballYPos, ballXDirection, bal
         return [score, paddle1YPos, paddle2YPos, ballXPos, ballYPos, ballXDirection, ballYDirection]
     
     #check if hits the other side
-    if (
-                        ballXPos >= WINDOW_WIDTH - PADDLE_WIDTH - PADDLE_BUFFER and ballYPos + BALL_HEIGHT >= paddle2YPos and ballYPos - BALL_HEIGHT <= paddle2YPos + PADDLE_HEIGHT):
+    if (ballXPos >= WINDOW_WIDTH - PADDLE_WIDTH - PADDLE_BUFFER and ballYPos + BALL_HEIGHT >= paddle2YPos and ballYPos - BALL_HEIGHT <= paddle2YPos + PADDLE_HEIGHT):
         #switch directions
         ballXDirection = -1
     #past it
@@ -143,6 +145,7 @@ def updatePaddle2(paddle2YPos, ballYPos):
 #game class
 class PongGame:
     def __init__(self):
+        pygame.font.init()
         #random number for initial direction of ball
         num = random.randint(0,9)
         #keep score
@@ -172,7 +175,7 @@ class PongGame:
         #new random number
         num = random.randint(0,9)
         #where it will start, y part
-        self.ballYPos = num*(WINDOW_HEIGHT - BALL_HEIGHT)/9
+        self.ballYPos = num*(WINDOW_HEIGHT - BALL_HEIGHT)/9    
 
     #
     def getPresentFrame(self):
@@ -185,10 +188,13 @@ class PongGame:
         drawPaddle2(self.paddle2YPos)
         #draw our ball
         drawBall(self.ballXPos, self.ballYPos)
+        drawScore(self.tally)  
         #copies the pixels from our surface to a 3D array. we'll use this for RL
         image_data = pygame.surfarray.array3d(pygame.display.get_surface())
         #updates the window
         pygame.display.flip()
+
+        
         #return our surface data
         return image_data
 
@@ -207,12 +213,14 @@ class PongGame:
         [score, self.paddle1YPos, self.paddle2YPos, self.ballXPos, self.ballYPos, self.ballXDirection, self.ballYDirection] = updateBall(self.paddle1YPos, self.paddle2YPos, self.ballXPos, self.ballYPos, self.ballXDirection, self.ballYDirection)
         #draw the ball
         drawBall(self.ballXPos, self.ballYPos)
+        drawScore(self.tally)  
         #get the surface data
         image_data = pygame.surfarray.array3d(pygame.display.get_surface())
         #update the window
         pygame.display.flip()
         #record the total score
-        self.tally = self.tally + score
-        print "Tally is " + str(self.tally)
+        self.tally = self.tally + score     
+
+         
         #return the score and the surface data
         return [score, image_data]

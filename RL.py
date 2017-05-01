@@ -15,12 +15,12 @@ GAMMA = 0.99
 INITIAL_EPSILON = 1.0
 FINAL_EPSILON = 0.05
 #how many frames to anneal epsilon
-EXPLORE = 500000 
-OBSERVE = 50000
+EXPLORE = 10000 
+OBSERVE = 1000
 #store our experiences, the size of it
 REPLAY_MEMORY = 500000
 #batch size to train on
-BATCH = 100
+BATCH = 30
 
 #create tensorflow graph
 def createGraph():
@@ -70,7 +70,7 @@ def trainGraph(inp, out, sess):
     gt = tf.placeholder("float", [None]) #ground truth
 
     #action
-    action = tf.reduce_sum(tf.mul(out, argmax), reduction_indices = 1)
+    action = tf.reduce_sum(tf.multiply(out, argmax), reduction_indices = 1)
     #cost function we will reduce through backpropagation
     cost = tf.reduce_mean(tf.square(action - gt))
     #optimization fucntion to reduce our minimize our cost function 
