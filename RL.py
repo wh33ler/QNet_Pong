@@ -4,7 +4,7 @@ import pong #our class
 import numpy as np #math
 import random #random 
 from collections import deque #queue data structure. fast appends. and pops. replay memory
-
+from numpy.random import choice
 
 
 #hyper params
@@ -15,59 +15,61 @@ GAMMA = 0.99
 INITIAL_EPSILON = 1.0
 FINAL_EPSILON = 0.05
 #how many frames to anneal epsilon
-EXPLORE = 10000 
-OBSERVE = 1000
+EXPLORE = 1000 
+OBSERVE = 100
 #store our experiences, the size of it
-REPLAY_MEMORY = 500000
+REPLAY_MEMORY = 200000
 #batch size to train on
-BATCH = 30
+BATCH = 25
 
 #create tensorflow graph
 def createGraph():
+     with tf.device('/gpu:0'):
+        #first convolutional layer. bias vector
+        #creates an empty tensor with all elements set to zero with a shape
+        W_conv1 = tf.Variable(tf.truncated_normal([8, 8, 4, 32], stddev=0.02))
+        b_conv1 = tf.Variable(tf.constant(0.01, shape=[32]))
 
-    #first convolutional layer. bias vector
-    #creates an empty tensor with all elements set to zero with a shape
-    W_conv1 = tf.Variable(tf.zeros([8, 8, 4, 32]))
-    b_conv1 = tf.Variable(tf.zeros([32]))
+        W_conv2 = tf.Variable(tf.truncated_normal([4, 4, 32, 64], stddev=0.02))
+        b_conv2 = tf.Variable(tf.constant(0.01, shape=[64]))
 
-    W_conv2 = tf.Variable(tf.zeros([4, 4, 32, 64]))
-    b_conv2 = tf.Variable(tf.zeros([64]))
+        W_conv3 = tf.Variable(tf.truncated_normal([3, 3, 64, 64], stddev=0.02))
+        b_conv3 = tf.Variable(tf.constant(0.01, shape=[64]))
 
-    W_conv3 = tf.Variable(tf.zeros([3, 3, 64, 64]))
-    b_conv3 = tf.Variable(tf.zeros([64]))
+        W_fc4 = tf.Variable(tf.truncated_normal([3136, 784], stddev=0.02))
+        b_fc4 = tf.Variable(tf.constant(0.01, shape=[784]))
 
-    W_fc4 = tf.Variable(tf.zeros([3136, 784]))
-    b_fc4 = tf.Variable(tf.zeros([784]))
+        W_fc5 = tf.Variable(tf.truncated_normal([784, ACTIONS], stddev=0.02))
+        b_fc5 = tf.Variable(tf.constant(0.01, shape=[ACTIONS]))
 
-    W_fc5 = tf.Variable(tf.zeros([784, ACTIONS]))
-    b_fc5 = tf.Variable(tf.zeros([ACTIONS]))
-
-    #input for pixel data
-    s = tf.placeholder("float", [None, 84, 84, 4])
+        #input for pixel data
+        s = tf.placeholder("float", [None, 84, 84, 4])
 
 
-    #Computes rectified linear unit activation fucntion on  a 2-D convolution given 4-D input and filter tensors. and 
-    conv1 = tf.nn.relu(tf.nn.conv2d(s, W_conv1, strides = [1, 4, 4, 1], padding = "VALID") + b_conv1)
+        #Computes rectified linear unit activation fucntion on  a 2-D convolution given 4-D input and filter tensors. and 
+        conv1 = tf.nn.relu(tf.nn.conv2d(s, W_conv1, strides = [1, 4, 4, 1], padding = "VALID") + b_conv1)
 
-    conv2 = tf.nn.relu(tf.nn.conv2d(conv1, W_conv2, strides = [1, 2, 2, 1], padding = "VALID") + b_conv2)
+        conv2 = tf.nn.relu(tf.nn.conv2d(conv1, W_conv2, strides = [1, 2, 2, 1], padding = "VALID") + b_conv2)
 
-    conv3 = tf.nn.relu(tf.nn.conv2d(conv2, W_conv3, strides = [1, 1, 1, 1], padding = "VALID") + b_conv3)
+        conv3 = tf.nn.relu(tf.nn.conv2d(conv2, W_conv3, strides = [1, 1, 1, 1], padding = "VALID") + b_conv3)
 
-    conv3_flat = tf.reshape(conv3, [-1, 3136])
+        conv3_flat = tf.reshape(conv3, [-1, 3136])
 
-    fc4 = tf.nn.relu(tf.matmul(conv3_flat, W_fc4) + b_fc4)
-    
-    fc5 = tf.matmul(fc4, W_fc5) + b_fc5
+        fc4 = tf.nn.relu(tf.matmul(conv3_flat, W_fc4) + b_fc4)
+        
+        fc5 = tf.matmul(fc4, W_fc5) + b_fc5
 
-    return s, fc5
+        return s, fc5
 
 
 #deep q network. feed in pixel data to graph session 
-def trainGraph(inp, out, sess):
+def trainGraph(inp, out):
 
     #to calculate the argmax, we multiply the predicted output with a vector with one value 1 and rest as 0
     argmax = tf.placeholder("float", [None, ACTIONS]) 
     gt = tf.placeholder("float", [None]) #ground truth
+    global_step = tf.Variable(0, name='global_step')
+
 
     #action
     action = tf.reduce_sum(tf.multiply(out, argmax), reduction_indices = 1)
@@ -92,11 +94,22 @@ def trainGraph(inp, out, sess):
     inp_t = np.stack((frame, frame, frame, frame), axis = 2)
 
     #saver
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(tf.global_variables())    
+    # use a SessionManager to help with automatic variable restoration    
+    sess = tf.InteractiveSession(config=tf.ConfigProto(log_device_placement=True))
+    
+    checkpoint = tf.train.latest_checkpoint('./checkpoints')
+    if checkpoint != None:
+        print('Restore Checkpoint %s'%(checkpoint))      
+        saver.restore(sess, checkpoint)
+        print("Model restored.")   
+    else:
+        init = tf.global_variables_initializer()
+        sess.run(init)
+        print("Initialized new Graph")
 
-    sess.run(tf.initialize_all_variables())
-
-    t = 0
+    t = global_step.eval()   
+    
     epsilon = INITIAL_EPSILON
     
     #training time
@@ -108,7 +121,8 @@ def trainGraph(inp, out, sess):
 
         #
         if(random.random() <= epsilon):
-            maxIndex = random.randrange(ACTIONS)
+            # make 0 the most choosen action for realistic randomness
+            maxIndex = choice((0,1,2), 1, p=(0.90, 0.05,0.05))
         else:
             maxIndex = np.argmax(out_t)
         argmax_t[maxIndex] = 1
@@ -161,22 +175,22 @@ def trainGraph(inp, out, sess):
         
         #update our input tensor the the next frame
         inp_t = inp_t1
-        t = t+1
+        t = t + 1        
 
         #print our where wer are after saving where we are
-        if t % 10000 == 0:
-            saver.save(sess, './' + 'pong' + '-dqn', global_step = t)
+        if t % 5000 == 0:
+            sess.run(global_step.assign(t))            
+            saver.save(sess, './checkpoints/model.ckpt', global_step=t)    
 
         print("TIMESTEP", t, "/ EPSILON", epsilon, "/ ACTION", maxIndex, "/ REWARD", reward_t, "/ Q_MAX %e" % np.max(out_t))
 
 
 def main():
-    #create session
-    sess = tf.InteractiveSession()
+    
     #input layer and output layer by creating graph
     inp, out = createGraph()
     #train our graph on input and output with session variables
-    trainGraph(inp, out, sess)
+    trainGraph(inp, out)
 
 if __name__ == "__main__":
     main()
