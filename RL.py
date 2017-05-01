@@ -15,8 +15,10 @@ GAMMA = 0.99
 INITIAL_EPSILON = 1.0
 FINAL_EPSILON = 0.05
 #how many frames to anneal epsilon
-EXPLORE = 10000 
-OBSERVE = 1000
+EXPLORE = 1000 
+OBSERVE = 100000
+
+SAVE_STEP = 5000
 #store our experiences, the size of it
 REPLAY_MEMORY = 200000
 #batch size to train on
@@ -44,7 +46,6 @@ def createGraph():
 
         #input for pixel data
         s = tf.placeholder("float", [None, 60, 60, 4])
-
 
         #Computes rectified linear unit activation fucntion on  a 2-D convolution given 4-D input and filter tensors. and 
         conv1 = tf.nn.relu(tf.nn.conv2d(s, W_conv1, strides = [1, 4, 4, 1], padding = "SAME") + b_conv1)
@@ -111,6 +112,7 @@ def trainGraph(inp, out):
         print("Initialized new Graph")
 
     t = global_step.eval()   
+    c= 0
     
     epsilon = INITIAL_EPSILON
     
@@ -132,8 +134,12 @@ def trainGraph(inp, out):
         if epsilon > FINAL_EPSILON:
             epsilon -= (INITIAL_EPSILON - FINAL_EPSILON) / EXPLORE
 
+        mode = 'observing'
+        if t > OBSERVE:
+            mode = 'training'
+
         #reward tensor if score is positive
-        reward_t, frame = game.getNextFrame(argmax_t)
+        reward_t, frame = game.getNextFrame(argmax_t, [t, np.max(out_t), epsilon, mode])
         #get frame pixel data
         frame = cv2.cvtColor(cv2.resize(frame, (60, 60)), cv2.COLOR_BGR2GRAY)
         ret, frame = cv2.threshold(frame, 1, 255, cv2.THRESH_BINARY)
@@ -149,7 +155,7 @@ def trainGraph(inp, out):
             D.popleft()
         
         #training iteration
-        if t > OBSERVE:
+        if c > OBSERVE:
 
             #get values from our replay memory
             minibatch = random.sample(D, BATCH)
@@ -177,14 +183,15 @@ def trainGraph(inp, out):
         
         #update our input tensor the the next frame
         inp_t = inp_t1
-        t = t + 1        
+        t = t + 1   
+        c = c + 1     
 
         #print our where wer are after saving where we are
-        if t % 5000 == 0:
+        if t % SAVE_STEP == 0:
             sess.run(global_step.assign(t))            
             saver.save(sess, './checkpoints/model.ckpt', global_step=t)    
 
-        print("TIMESTEP", t, "/ EPSILON", epsilon, "/ ACTION", maxIndex, "/ REWARD", reward_t, "/ Q_MAX %e" % np.max(out_t))
+        #print("TIMESTEP", t, "/ EPSILON", epsilon, "/ ACTION", maxIndex, "/ REWARD", reward_t, "/ Q_MAX %e" % np.max(out_t))
 
 
 def main():

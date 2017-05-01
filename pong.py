@@ -25,7 +25,7 @@ BALL_WIDTH = 10
 BALL_HEIGHT = 10
 
 #speeds of our paddle and ball
-PADDLE_SPEED = 4
+PADDLE_SPEED = 5
 BALL_X_SPEED = 6
 BALL_Y_SPEED = 4
 
@@ -63,7 +63,23 @@ def drawPaddle2(paddle2YPos):
 def drawScore(score):    
     font = pygame.font.Font(None, 28)    
     scorelabel = font.render("Score " + str(score), 1, WHITE)
-    screen.blit(scorelabel, (10 , 10))
+    screen.blit(scorelabel, (30 , 10))
+def drawInfos(infos, action):
+    font = pygame.font.Font(None, 15)        
+    label = font.render("step " + str(infos[0]) + " ["+str(infos[3])+"]", 1, WHITE)
+    screen.blit(label, (30 , 30))
+    label = font.render("epsilon " + str(infos[2]), 1, WHITE)
+    screen.blit(label, (30 , 45))
+    label = font.render("q_max " + str(infos[1]), 1, WHITE)
+    screen.blit(label, (30 , 60))
+    actionText = "--"
+    if (action[1] == 1):
+        actionText = "Up"
+    if (action[2] == 1):
+        actionText = "Down"
+    label = font.render("action " + actionText, 1, WHITE)
+    screen.blit(label, (30 , 75))
+    
 
 
 #update the ball, using the paddle posistions the balls positions and the balls directions
@@ -199,7 +215,7 @@ class PongGame:
         return image_data
 
     #update our screen
-    def getNextFrame(self, action):
+    def getNextFrame(self, action, infos):
         pygame.event.pump()
         score = 0
         screen.fill(BLACK)
@@ -213,9 +229,12 @@ class PongGame:
         [score, self.paddle1YPos, self.paddle2YPos, self.ballXPos, self.ballYPos, self.ballXDirection, self.ballYDirection] = updateBall(self.paddle1YPos, self.paddle2YPos, self.ballXPos, self.ballYPos, self.ballXDirection, self.ballYDirection)
         #draw the ball
         drawBall(self.ballXPos, self.ballYPos)
-        drawScore(self.tally)  
+        
+        
         #get the surface data
         image_data = pygame.surfarray.array3d(pygame.display.get_surface())
+        drawScore(self.tally)  
+        drawInfos(infos, action)
         #update the window
         pygame.display.flip()
         #record the total score
