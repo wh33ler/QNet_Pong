@@ -3,8 +3,10 @@ import cv2 #read in pixel data
 import pong #our class
 import numpy as np #math
 import random #random 
+import os
 from collections import deque #queue data structure. fast appends. and pops. replay memory
 from numpy.random import choice
+
 
 
 #hyper params
@@ -15,8 +17,8 @@ GAMMA = 0.99
 INITIAL_EPSILON = 1.0
 FINAL_EPSILON = 0.05
 #how many frames to anneal epsilon
-EXPLORE = 1000 
-OBSERVE = 100000
+EXPLORE = 10000 
+OBSERVE = 1000
 
 SAVE_STEP = 5000
 #store our experiences, the size of it
@@ -191,11 +193,12 @@ def trainGraph(inp, out):
             sess.run(global_step.assign(t))            
             saver.save(sess, './checkpoints/model.ckpt', global_step=t)    
 
-        #print("TIMESTEP", t, "/ EPSILON", epsilon, "/ ACTION", maxIndex, "/ REWARD", reward_t, "/ Q_MAX %e" % np.max(out_t))
+        print("TIMESTEP", t, "/ EPSILON", epsilon, "/ ACTION", maxIndex, "/ REWARD", reward_t, "/ Q_MAX %e" % np.max(out_t))
 
 
 def main():
-    
+    if not os.path.exists('./checkpoints'):
+        os.makedirs('./checkpoints')
     #input layer and output layer by creating graph
     inp, out = createGraph()
     #train our graph on input and output with session variables
