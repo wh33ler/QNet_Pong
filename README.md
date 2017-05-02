@@ -18,6 +18,7 @@ I did some changes to the network and to the pong game
 * reduced batch size to 32 for performance reasons
 * Reduced Explore and Observation range
 * Fixed saving and reloading from checkpoints 
+* uploaded checkpoints and a model_mode to see the result 
 
 ## Results
 After around 700k Time Steps the agent plays a near perfect game and even found some bugs of the PONG implementation to exploit. First I thought it was just not good enough until I saw that it was just a way of receiving more points by moving the paddle a certain way. Really hard to expoit by hand.... but see by yourself. It is kind of eye opening what a learning machine is capebale of.
