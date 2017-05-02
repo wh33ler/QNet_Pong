@@ -1,13 +1,13 @@
 # pong_neural_net_live
 
-##Deep Q Network Example
+## Deep Q Network Example
 This code is originaly by Siraj (view original Readme Below)
 It is a simple implemention of a Deep Q Network which learns to play PONG against a perfectly playing computer
 
 The basis of this code was good but had some issues that didn't work for me. 
 So I fixed them as follows: 
 
-##Changes
+## Changes
 I did some changes to the network and to the pong game
 * fixed for python3 and tensorflow v1
 * added some text overlay in the game to reduce prints in console
@@ -19,17 +19,17 @@ I did some changes to the network and to the pong game
 * Reduced Explore and Observation range
 * Fixed saving and reloading from checkpoints 
 
-##Results
+## Results
 After around 700k Time Steps the agent plays a near perfect game and even found some bugs of the PONG implementation to exploit. First I thought it was just not good enough until I saw that it was just a way of receiving more points by moving the paddle a certain way. Really hard to expoit by hand.... but see by yourself. It is kind of eye opening what a learning machine is capebale of.
 
 
 ## Original README Below
 
-##Overview
+## Overview
 This is the code for the Live [Youtube](https://www.youtube.com/watch?v=Hqf__FlRlzg) session by @Sirajology. In this live session I build
 the game of [Pong](http://www.ponggame.org) from scratch. Then I build a [Deep Q Network](https://www.quora.com/Artificial-Intelligence-What-is-an-intuitive-explanation-of-how-deep-Q-networks-DQN-work) that gets better and better over time through trial and error. The DQN is a convolutional neural network that reads in pixel data from the game and the game score. Using just those 2 parameters, it learns what moves it needs to make to become better.
 
-##Installation
+## Installation
 
 
 * tensorflow (https://www.tensorflow.org)
@@ -41,7 +41,7 @@ the game of [Pong](http://www.ponggame.org) from scratch. Then I build a [Deep Q
 
 use [pip](https://pypi.python.org/pypi/pip) to install the dependencies. Tensorflow and cv2 are more manual. Links provided above ^
 
-##Usage 
+## Usage 
 
 Run it like this in terminal. The longer you let it run, the better it will get.
 
@@ -49,7 +49,7 @@ Run it like this in terminal. The longer you let it run, the better it will get.
 python RL.py
 ```
 
-##Credits
+## Credits
 
 This code was by [malreddysid](https://github.com/malreddysid) i've merely wrapped, updated, and documented it. 
 
