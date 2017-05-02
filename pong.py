@@ -26,8 +26,8 @@ BALL_HEIGHT = 10
 
 #speeds of our paddle and ball
 PADDLE_SPEED = 5
-BALL_X_SPEED = 6
-BALL_Y_SPEED = 4
+BALL_X_SPEED = 5
+BALL_Y_SPEED = 5
 
 #RGB colors for our paddle and ball
 WHITE = (255, 255, 255)
