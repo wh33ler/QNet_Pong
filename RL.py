@@ -19,6 +19,7 @@ FINAL_EPSILON = 0.05
 #how many frames to anneal epsilon
 EXPLORE = 10000 
 OBSERVE = 1000
+USE_MODEL = True
 
 SAVE_STEP = 5000
 #store our experiences, the size of it
@@ -126,7 +127,7 @@ def trainGraph(inp, out):
         argmax_t = np.zeros([ACTIONS])
 
         #
-        if(random.random() <= epsilon):
+        if(random.random() <= epsilon and not USE_MODEL):
             # make 0 the most choosen action for realistic randomness
             maxIndex = choice((0,1,2), 1, p=(0.90, 0.05,0.05))
         else:
@@ -139,6 +140,8 @@ def trainGraph(inp, out):
         mode = 'observing'
         if t > OBSERVE:
             mode = 'training'
+        if USE_MODEL:
+            mode = 'model only'
 
         #reward tensor if score is positive
         reward_t, frame = game.getNextFrame(argmax_t, [t, np.max(out_t), epsilon, mode])
@@ -157,7 +160,7 @@ def trainGraph(inp, out):
             D.popleft()
         
         #training iteration
-        if c > OBSERVE:
+        if c > OBSERVE and not USE_MODEL:
 
             #get values from our replay memory
             minibatch = random.sample(D, BATCH)
@@ -189,7 +192,7 @@ def trainGraph(inp, out):
         c = c + 1     
 
         #print our where wer are after saving where we are
-        if t % SAVE_STEP == 0:
+        if t % SAVE_STEP == 0 and not USE_MODEL:
             sess.run(global_step.assign(t))            
             saver.save(sess, './checkpoints/model.ckpt', global_step=t)    
 
